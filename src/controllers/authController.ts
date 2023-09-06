@@ -4,6 +4,8 @@ import { validationErrorHandler } from "../util/customValidationErrorHandler";
 
 import { compare, hash } from "bcryptjs";
 
+const secretKey: string | undefined = process.env.SECRET_KEY;
+
 export const register = async (req, res, next) => {
   validationErrorHandler(req);
 
@@ -67,7 +69,7 @@ export const login = async (req, res, next) => {
           email: user.email,
           userId: user._id.toString(),
         },
-        "somesupersecretsecret",
+        secretKey,
         { expiresIn: "3h" }
       );
 
