@@ -6,7 +6,7 @@ import { compare, hash } from "bcryptjs";
 
 const secretKey: string | undefined = process.env.SECRET_KEY;
 
-export const register = async (req, res, next) => {
+export const register = (req, res, next) => {
   validationErrorHandler(req);
 
   const { email, password, firstName, lastName } = req.body;
@@ -26,9 +26,6 @@ export const register = async (req, res, next) => {
       res.status(201).json({ message: "User created!", userId: result._id });
     })
     .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
       next(err);
     });
 };

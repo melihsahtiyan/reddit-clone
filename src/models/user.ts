@@ -30,6 +30,7 @@ const userSchema = new Schema(
       default: Date.now(),
     },
     updatedAt: Date,
+    posts: [{ type: Schema.Types.ObjectId, ref: "Post" }],
   },
   { timestamps: true }
 );

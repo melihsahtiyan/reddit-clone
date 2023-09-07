@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { login, register } from "../controllers/authController";
+import * as authController from "../controllers/authController";
 import { body } from "express-validator";
 import User from "../models/user";
 
@@ -25,9 +25,7 @@ router.put(
     body("firstName").trim().not().isEmpty().isLength({ min: 2 }),
     body("lastName").trim().not().isEmpty().isLength({ min: 2 }),
   ],
-  (req, res, next) => {
-    register(req, res, next);
-  }
+  authController.register
 );
 
 router.post(
@@ -45,9 +43,7 @@ router.post(
       }),
     body("password").trim().isLength({ min: 5 }),
   ],
-  (req, res, next) => {
-    login(req, res, next);
-  }
+  authController.login
 );
 
 export default router;
