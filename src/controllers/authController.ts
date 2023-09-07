@@ -39,7 +39,7 @@ export const login = async (req, res, next) => {
   const password = req.body.password;
   let loadedUser;
 
-  const user = User.findOne({ email })
+  User.findOne({ email })
     .then((user) => {
       if (!user) {
         const error: CustomError = new Error("User not found!");
