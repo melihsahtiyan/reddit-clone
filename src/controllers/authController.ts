@@ -1,17 +1,19 @@
-import { sign } from "jsonwebtoken";
+import * as jwt from "jsonwebtoken";
 import User from "../models/user";
-import { validationErrorHandler } from "../util/customValidationErrorHandler";
+import { isValid } from "../util/error/validationErrorHandler";
 
-import { compare, hash } from "bcryptjs";
+import * as bcrypt from "bcryptjs";
+import { CustomError } from "../util/error/CustomError";
 
 const secretKey: string | undefined = process.env.SECRET_KEY;
 
 export const register = (req, res, next) => {
-  validationErrorHandler(req);
+  isValid(req);
 
   const { email, password, firstName, lastName } = req.body;
 
-  hash(password, 12)
+  bcrypt
+    .hash(password, 12)
     .then((hashedPassword) => {
       const user = new User({
         email,
@@ -31,49 +33,42 @@ export const register = (req, res, next) => {
 };
 
 export const login = async (req, res, next) => {
-  validationErrorHandler(req);
+  isValid(req);
 
-  const { email, password } = req.body;
+  const email = req.body.email;
+  const password = req.body.password;
+  let loadedUser;
 
-  const loadedUser = User.findOne({ email: email })
+  const user = User.findOne({ email })
     .then((user) => {
       if (!user) {
-        const error: any = new Error(
-          "A user with this email could not be found."
-        );
+        const error: CustomError = new Error("User not found!");
         error.statusCode = 401;
         throw error;
       }
-      return user;
-    })
-    .then((user) => {
-      return compare(password, user.password);
+      console.log("====================================");
+      console.log(user);
+      console.log("====================================");
+      loadedUser = user;
+      return bcrypt.compare(password, user.password);
     })
     .then((isEqual) => {
       if (!isEqual) {
-        const error: any = new Error("Wrong email or password!");
+        const error: CustomError = new Error("Wrong password!");
         error.statusCode = 401;
         throw error;
       }
-      return loadedUser;
-    })
-    .then((user) => {
-      user.updatedAt = Date.now();
-      user.save();
 
-      sign(
+      const token = jwt.sign(
         {
-          email: user.email,
-          userId: user._id.toString(),
+          email: loadedUser.email,
+          userId: loadedUser._id.toString(),
         },
-        secretKey,
+        process.env.SECRET_KEY,
         { expiresIn: "3h" }
       );
 
-      res.status(200).json({
-        message: "User logged in!",
-        userId: user._id.toString(),
-      });
+      res.status(200).json({ token: token, userId: loadedUser._id.toString(), message: "Login successful!" });
     })
     .catch((err) => {
       if (!err.statusCode) {

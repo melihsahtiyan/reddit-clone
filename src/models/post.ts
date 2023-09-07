@@ -11,8 +11,8 @@ const postSchema = new Schema({
     type: String,
     required: true,
   },
-  imageUrl: {
-    type: String,
+  sourceUrls: {
+    type: Array<String>,
     required: true,
   },
   creator: {
@@ -28,7 +28,14 @@ const postSchema = new Schema({
     type: Date,
     default: Date.now(),
   },
-  comments: [{ type: Schema.Types.ObjectId, ref: "Comment" }],
+  isNsfw: {
+    type: Boolean,
+    default: false,
+  },
+  updatedAt: Date,
+  user: { type: Schema.Types.ObjectId, ref: "User" },
+  // tags: [{ type: Schema.Types.ObjectId, ref: "Tag" }],
+  // comments: [{ type: Schema.Types.ObjectId, ref: "Comment" }],
 });
 
 export default mongoose.model("Post", postSchema);

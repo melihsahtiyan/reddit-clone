@@ -29,8 +29,11 @@ const userSchema = new Schema(
       type: Date,
       default: Date.now(),
     },
+    profilePictureUrl: String,
     updatedAt: Date,
+    // chats: [{ type: Schema.Types.ObjectId, ref: "Chat" }],
     posts: [{ type: Schema.Types.ObjectId, ref: "Post" }],
+    // tags: [{ type: Schema.Types.ObjectId, ref: "Tag" }],
   },
   { timestamps: true }
 );

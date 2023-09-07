@@ -1,12 +1,7 @@
 import { validationResult } from "express-validator";
+import { CustomError } from "./CustomError";
 
-interface CustomError extends Error {
-  statusCode?: number;
-  message: string;
-  data?: any[];
-}
-
-export const validationErrorHandler = (req: Request) => {
+export const isValid = (req: Request) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     // 422 is validation error
