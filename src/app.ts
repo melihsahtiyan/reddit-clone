@@ -32,12 +32,11 @@ const storage = multer.diskStorage({
 
     const mimeType = mimeTypes[file.mimetype];
 
-    cb(null, uniqueSuffix + mimeType === undefined ? "" : mimeType);
+    cb(null, uniqueSuffix + mimeType);
   },
 });
 
 const fileFilter = (req, file, cb) => {
-  // Accepted mimetypes for images
   const imageMimetypes = [
     "image/png",
     "image/jpg",
@@ -47,12 +46,11 @@ const fileFilter = (req, file, cb) => {
     "image/gif",
   ];
 
-  // Accepted mimetypes for videos
   const videoMimetypes = ["video/mp4", "video/mov", "video/avi"];
 
   if (
-    imageMimetypes.includes(file.mimetype) ||
-    videoMimetypes.includes(file.mimetype)
+    imageMimetypes.find((mimetype) => mimetype === file.mimetype) ||
+    videoMimetypes.find((mimetype) => mimetype === file.mimetype)
   ) {
     cb(null, true);
   } else {
@@ -64,12 +62,9 @@ const app = express();
 
 app.use(bodyParser.json());
 app.use(
-  multer({
-    storage: storage,
-    fileFilter: fileFilter,
-  }).array("sources", 10)
+  multer({ storage: storage, fileFilter: fileFilter }).array("sources", 10)
 );
-app.use("/sources", express.static(path.join(__dirname, "sources")));
+app.use("/sources", express.static(path.join(__dirname, "/sources")));
 
 // CORS error handling
 app.use((req, res, next) => {
@@ -93,10 +88,6 @@ app.use(postRoutes);
 
 app.use((error, req, res, next) => {
   handleError(error, req, res, next);
-});
-
-app.get("/", (req, res) => {
-  res.send("Hello World!");
 });
 
 mongoose
