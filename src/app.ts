@@ -4,67 +4,17 @@ import * as dotenv from "dotenv";
 import authRoutes from "./routes/authRoutes";
 import postRoutes from "./routes/postRoutes";
 import mongoose from "mongoose";
-import multer from "multer";
-import { v4 as uuidv4 } from "uuid";
 import path from "path";
 import { handleError } from "./middleware/errorHandlingMiddleware";
+import { fileUpload } from "./util/fileUtil";
 
 dotenv.config();
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "sources");
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = uuidv4() + "-" + Math.round(Math.random() * 1e9);
-
-    const mimeTypes = {
-      "image/png": ".png",
-      "image/jpg": ".jpg",
-      "image/jpeg": ".jpeg",
-      "image/webp": ".webp",
-      "image/heic": ".heic",
-      "image/gif": ".gif",
-      "video/mp4": ".mp4",
-      "video/mov": ".mov",
-      "video/avi": ".avi",
-    };
-
-    const mimeType = mimeTypes[file.mimetype];
-
-    cb(null, uniqueSuffix + mimeType);
-  },
-});
-
-const fileFilter = (req, file, cb) => {
-  const imageMimetypes = [
-    "image/png",
-    "image/jpg",
-    "image/jpeg",
-    "image/webp",
-    "image/heic",
-    "image/gif",
-  ];
-
-  const videoMimetypes = ["video/mp4", "video/mov", "video/avi"];
-
-  if (
-    imageMimetypes.find((mimetype) => mimetype === file.mimetype) ||
-    videoMimetypes.find((mimetype) => mimetype === file.mimetype)
-  ) {
-    cb(null, true);
-  } else {
-    cb(null, false);
-  }
-};
 
 const app = express();
 
 app.use(bodyParser.json());
-app.use(
-  multer({ storage: storage, fileFilter: fileFilter }).array("sources", 10)
-);
-app.use("/sources", express.static(path.join(__dirname, "/sources")));
+app.use(fileUpload);
+app.use("/media", express.static(path.join(__dirname, "/media")));
 
 // CORS error handling
 app.use((req, res, next) => {

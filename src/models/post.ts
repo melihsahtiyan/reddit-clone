@@ -20,10 +20,16 @@ const postSchema = new Schema({
     ref: "User",
     required: true,
   },
-  vote: {
-    type: Number,
-    default: 0,
-  },
+  votes: [
+    {
+      point: {
+        type: Number,
+        default: 0,
+        Range: [-1, 1],
+      },
+      voters: { type: Schema.Types.ObjectId, ref: "User" },
+    },
+  ],
   createdAt: {
     type: Date,
     default: Date.now(),
@@ -33,7 +39,6 @@ const postSchema = new Schema({
     default: false,
   },
   updatedAt: Date,
-  user: { type: Schema.Types.ObjectId, ref: "User" },
   // tags: [{ type: Schema.Types.ObjectId, ref: "Tag" }],
   // comments: [{ type: Schema.Types.ObjectId, ref: "Comment" }],
 });

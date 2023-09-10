@@ -28,4 +28,6 @@ router.get("/posts", postController.getPosts);
 
 router.get("/post/:postId", postController.getPost);
 
+router.post("/post/:postId/vote", postController.votePost);
+
 export default router;

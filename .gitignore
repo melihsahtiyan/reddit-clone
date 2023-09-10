@@ -3,4 +3,5 @@
 .env
 tsconfig.json
 nodemon.json
-sources
+media/images
+media/videos
