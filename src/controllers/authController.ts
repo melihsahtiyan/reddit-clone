@@ -1,14 +1,15 @@
 import * as jwt from "jsonwebtoken";
 import User from "../models/user";
 import { isValid } from "../util/error/validationErrorHandler";
-
+import { Response, NextFunction } from "express";
 import * as bcrypt from "bcryptjs";
 import { CustomError } from "../util/error/CustomError";
+import Request from "../types/Request";
 
 const secretKey: string | undefined = process.env.SECRET_KEY;
 
-export const register = (req, res, next) => {
-  isValid(req);
+export const register = (req: Request, res: Response, next: NextFunction) => {
+  isValid(req, next);
 
   const { email, password, firstName, lastName } = req.body;
 
@@ -32,8 +33,12 @@ export const register = (req, res, next) => {
     });
 };
 
-export const login = async (req, res, next) => {
-  isValid(req);
+export const login = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  isValid(req, next);
 
   const email = req.body.email;
   const password = req.body.password;
@@ -68,7 +73,11 @@ export const login = async (req, res, next) => {
         { expiresIn: "3h" }
       );
 
-      res.status(200).json({ token: token, userId: loadedUser._id.toString(), message: "Login successful!" });
+      res.status(200).json({
+        token: token,
+        userId: loadedUser._id.toString(),
+        message: "Login successful!",
+      });
     })
     .catch((err) => {
       if (!err.statusCode) {

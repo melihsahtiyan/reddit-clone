@@ -1,18 +1,21 @@
+import { Response, NextFunction } from "express";
 import { isValid } from "../util/error/validationErrorHandler";
 import { CustomError } from "../util/error/CustomError";
 import Post from "./../models/post";
 import User from "./../models/user";
 import { clearImage } from "../util/fileUtil";
+import Request from "../types/Request";
+import user from "./../models/user";
 
 export const createPost = async (req, res, next) => {
-  isValid(req);
+  isValid(req, next);
 
   const title = req.body.title;
   const body = req.body.body;
   const isNsfw = req.body.isNsfw;
-  const userId = req.userId || "64f9a018953d4d1d90bcd14e";
+  const userId = req.userId;
 
-  if (req.files.length > 10) {
+  if (req.files.values.length > 10) {
     const error: CustomError = new Error("Too many files!");
     error.statusCode = 422;
     return next(error);
@@ -31,7 +34,7 @@ export const createPost = async (req, res, next) => {
     title: title,
     body: body,
     isNsfw: isNsfw,
-    creator: req.userId || "64f9a018953d4d1d90bcd14e",
+    creator: req.userId,
     sourceUrls: uploadedFiles,
     updatedAt: Date.now(),
   });
@@ -71,11 +74,15 @@ export const createPost = async (req, res, next) => {
   }
 };
 
-export const updatePost = async (req, res, next) => {
+export const updatePost = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const postId = req.params.postId;
-  const userId = req.userId || "64f9a018953d4d1d90bcd14e";
+  const userId = req.userId;
 
-  isValid(req);
+  isValid(req, next);
 
   const title = req.body.title;
   const body = req.body.body;
@@ -118,9 +125,13 @@ export const updatePost = async (req, res, next) => {
   }
 };
 
-export const deletePost = async (req, res, next) => {
-  const postId = req.params.postId || "64fde2043eac31e8705ff24b";
-  const userId = req.userId || "64f9a018953d4d1d90bcd14e";
+export const deletePost = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const postId = req.params.postId;
+  const userId = req.userId;
 
   try {
     const postToDelete = await Post.findOne({ _id: postId });
@@ -163,15 +174,24 @@ export const deletePost = async (req, res, next) => {
   }
 };
 
-export const getPosts = async (req, res, next) => {
+export const getPosts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    const currentPage = req.query.page || 1;
-    const perPage = 2;
+    const currentPage = parseInt(req.query.page as string) || 1;
+    const perPage = parseInt(req.query.perPage as string) || 4;
 
     const totalItems = await Post.countDocuments();
 
     const posts = await Post.find()
-      .populate("creator")
+      .populate({ path: "creator", select: "firstName lastName" })
+      .populate({
+        path: "comments",
+        select: "body",
+        populate: { path: "creator", select: "firstName lastName" },
+      })
       .sort({ createdAt: -1 })
       .skip((currentPage - 1) * perPage)
       .limit(perPage);
@@ -190,11 +210,17 @@ export const getPosts = async (req, res, next) => {
   }
 };
 
-export const getPost = async (req, res, next) => {
+export const getPost = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const postId = req.params.postId;
 
-    const post = await Post.findOne({ _id: postId }).populate("creator");
+    const post = await Post.findOne({ _id: postId })
+      .populate("creator")
+      .populate("comments");
 
     if (!post) {
       const error: CustomError = new Error("Could not find post.");
@@ -212,9 +238,13 @@ export const getPost = async (req, res, next) => {
   }
 };
 
-export const votePost = async (req, res, next) => {
+export const votePost = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const postId = req.params.postId;
-  const userId = req.userId || "64face123996b3eeb0df4245";
+  const userId = req.userId;
 
   // "64f9a018953d4d1d90bcd14e";
 
@@ -226,14 +256,37 @@ export const votePost = async (req, res, next) => {
 
     checkIfPostAndUserConfirms(postToVote, votedUser, next);
 
+    if (vote < -1 || vote > 1) {
+      const error: CustomError = new Error("Vote must be between -1 and 1.");
+      error.statusCode = 422;
+      return next(error);
+    }
+
     const userVoted = postToVote.votes.find(
-      (vote) => vote.voters.toString() === votedUser._id.toString()
+      (vote) => vote.voter.toString() === votedUser._id.toString()
     );
 
     if (userVoted) {
+      postToVote.totalVotes -= userVoted.point;
       userVoted.point = vote;
+      postToVote.totalVotes += userVoted.point;
     } else {
-      postToVote.votes.push({ point: vote, voters: votedUser._id });
+      postToVote.votes.push({ point: vote, voter: votedUser._id });
+      postToVote.totalVotes += vote;
+    }
+
+    if (vote === 0) {
+      postToVote.votes.filter((vote) => {
+        console.log("====================================");
+        console.log("if (vote === 0)", vote.voter);
+        console.log("====================================");
+        vote.voter.toString() !== votedUser._id.toString();
+      });
+
+      return res.status(200).json({
+        message: "Post unvoted!",
+        post: { title: postToVote.title, votes: postToVote.votes },
+      });
     }
 
     const updatedPost = await postToVote.save();
@@ -249,7 +302,7 @@ export const votePost = async (req, res, next) => {
   }
 };
 
-const checkIfPostAndUserConfirms = (post, user, next) => {
+const checkIfPostAndUserConfirms = (post, user, next: NextFunction) => {
   if (!user) {
     const error: CustomError = new Error("Could not find user.");
     error.statusCode = 404;

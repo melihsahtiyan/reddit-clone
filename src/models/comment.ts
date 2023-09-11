@@ -26,16 +26,27 @@ const commentSchema = new Schema(
       type: Date,
       default: Date.now(),
     },
-    isUpdated: {
-      type: Boolean,
-      default: false,
-    },
-    comments: [
+    updatedAt: Date,
+    replies: [
       {
         type: Schema.Types.ObjectId,
         ref: "Comment",
       },
     ],
+    votes: [
+      {
+        point: {
+          type: Number,
+          default: 0,
+          Range: [-1, 1],
+        },
+        voter: { type: Schema.Types.ObjectId, ref: "User" },
+      },
+    ],
+    totalVotes: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );

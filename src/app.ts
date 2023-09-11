@@ -3,6 +3,7 @@ import bodyParser from "body-parser";
 import * as dotenv from "dotenv";
 import authRoutes from "./routes/authRoutes";
 import postRoutes from "./routes/postRoutes";
+import commentRoutes from "./routes/commentRoutes";
 import mongoose from "mongoose";
 import path from "path";
 import { handleError } from "./middleware/errorHandlingMiddleware";
@@ -35,6 +36,7 @@ app.use((req, res, next) => {
 
 app.use("/auth", authRoutes);
 app.use(postRoutes);
+app.use(commentRoutes);
 
 app.use((error, req, res, next) => {
   handleError(error, req, res, next);

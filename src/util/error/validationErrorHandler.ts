@@ -1,7 +1,8 @@
 import { validationResult } from "express-validator";
 import { CustomError } from "./CustomError";
+import { NextFunction, Request } from "express";
 
-export const isValid = (req: Request) => {
+export const isValid = (req: Request, next: NextFunction) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     // 422 is validation error
@@ -11,6 +12,6 @@ export const isValid = (req: Request) => {
       data: errors.array(),
       statusCode: 422,
     };
-    throw error;
+    return next(error);
   }
 };

@@ -27,9 +27,13 @@ const postSchema = new Schema({
         default: 0,
         Range: [-1, 1],
       },
-      voters: { type: Schema.Types.ObjectId, ref: "User" },
+      voter: { type: Schema.Types.ObjectId, ref: "User" },
     },
   ],
+  totalVotes: {
+    type: Number,
+    default: 0,
+  },
   createdAt: {
     type: Date,
     default: Date.now(),
@@ -40,7 +44,7 @@ const postSchema = new Schema({
   },
   updatedAt: Date,
   // tags: [{ type: Schema.Types.ObjectId, ref: "Tag" }],
-  // comments: [{ type: Schema.Types.ObjectId, ref: "Comment" }],
+  comments: [{ type: Schema.Types.ObjectId, ref: "Comment" }],
 });
 
 export default mongoose.model("Post", postSchema);
