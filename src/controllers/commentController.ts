@@ -4,6 +4,7 @@ import { CustomError } from "../util/error/CustomError";
 import Comment from "../models/comment";
 import Post from "../models/post";
 import User from "../models/user";
+import comment from "../models/comment";
 
 export const createPostComment = async (
   req: Request,
@@ -36,6 +37,7 @@ export const createPostComment = async (
       body: body,
       creator: userId,
       post: postId,
+      isReply: false,
     });
 
     const updatedPost = await Post.findByIdAndUpdate(postId, {
@@ -135,19 +137,162 @@ export const replyComment = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {};
+) => {
+  const commentId = req.params.commentId;
+  const userId = req.userId;
+
+  const body = req.body.body;
+
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      const error: CustomError = new Error("User not found!");
+      error.statusCode = 404;
+      return next(error);
+    }
+
+    const commentToReply = await Comment.findById(commentId);
+
+    if (!commentToReply) {
+      const error: CustomError = new Error("Comment not found!");
+      error.statusCode = 404;
+      return next(error);
+    }
+
+    const createdComment = await new Comment({
+      body: body,
+      creator: userId,
+      post: commentToReply.post,
+      isReply: true,
+    });
+
+    commentToReply.replies.push(createdComment._id);
+
+    await createdComment.save();
+
+    await commentToReply.save();
+
+    return res.status(201).json({
+      message: "Comment replied successfully!",
+      comment: commentToReply,
+      creator: {
+        _id: userId,
+        name: user.firstName + " " + user.lastName,
+      },
+    });
+  } catch (err) {
+    const error: CustomError = new Error(
+      "Replying comment failed: " + err.message
+    );
+    error.statusCode = 500;
+    return next(error);
+  }
+};
 
 export const updateComment = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {};
+) => {
+  const commentId = req.params.commentId;
+  const userId = req.userId;
+
+  isValid(req, next);
+
+  const body = req.body.body;
+
+  try {
+    const commentToUpdate = await Comment.findById(commentId);
+    const user = await User.findById(userId);
+
+    if (!commentToUpdate) {
+      const error: CustomError = new Error("Comment not found!");
+      error.statusCode = 404;
+      return next(error);
+    }
+
+    if (!user) {
+      const error: CustomError = new Error("User not found!");
+      error.statusCode = 404;
+      return next(error);
+    }
+
+    if (commentToUpdate.creator.toString() !== userId.toString()) {
+      const error: CustomError = new Error("Not authorized!");
+      error.statusCode = 403;
+      return next(error);
+    }
+
+    commentToUpdate.body = body;
+    commentToUpdate.updatedAt = new Date();
+
+    const updatedComment = await commentToUpdate.save();
+
+    return res.status(200).json({
+      message: "Comment updated successfully!",
+      comment: updatedComment,
+    });
+  } catch (err) {
+    const error: CustomError = new Error(
+      "Updating comment failed: " + err.message
+    );
+    error.statusCode = 500;
+    return next(error);
+  }
+};
 
 export const deleteComment = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {};
+) => {
+  const commentId = req.params.commentId;
+  const userId = req.userId;
+  const deletedByAdmin = req.body.deletedByAdmin;
+
+  try {
+    const commentToDelete = await Comment.findById(commentId);
+
+    if (!commentToDelete) {
+      const error: CustomError = new Error("Comment not found!");
+      error.statusCode = 404;
+      return next(error);
+    }
+
+    if (commentToDelete.creator.toString() !== userId.toString()) {
+      const error: CustomError = new Error("Not authorized!");
+      error.statusCode = 403;
+      return next(error);
+    }
+
+    if (deletedByAdmin) {
+      const deletedComment = await Comment.updateOne({
+        _id: commentId,
+        body: "[deleted]",
+        updatedAt: new Date(),
+      });
+
+      return res.status(200).json({
+        message: "Comment deleted successfully!",
+        comment: deletedComment,
+      });
+    }
+
+    const deletedComment = await Comment.findByIdAndDelete(commentId);
+
+    return res.status(200).json({
+      message: "Comment deleted successfully!",
+      comment: deletedComment,
+    });
+  } catch (err) {
+    const error: CustomError = new Error(
+      "Deleting comment failed: " + err.message
+    );
+    error.statusCode = 500;
+    return next(error);
+  }
+};
 
 export const getComments = async (
   req: Request,
@@ -155,7 +300,7 @@ export const getComments = async (
   next: NextFunction
 ) => {
   try {
-    const comments = await Comment.find();
+    const comments = await Comment.find().populate("replies");
 
     if (!comments) {
       res.status(404).json({

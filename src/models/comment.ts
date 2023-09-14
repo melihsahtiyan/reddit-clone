@@ -33,12 +33,16 @@ const commentSchema = new Schema(
         ref: "Comment",
       },
     ],
+    isReply: {
+      type: Boolean,
+      required: true,
+    },
     votes: [
       {
         point: {
           type: Number,
           default: 0,
-          Range: [-1, 1],
+          range: [-1, 1],
         },
         voter: { type: Schema.Types.ObjectId, ref: "User" },
       },

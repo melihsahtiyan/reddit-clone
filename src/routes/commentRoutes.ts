@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { body } from "express-validator";
+import { body, param } from "express-validator";
 import * as commentController from "../controllers/commentController";
 import isAuth from "../middleware/is-auth";
 
@@ -21,7 +21,11 @@ router.put(
 
 router.get("/comments", commentController.getComments);
 
-router.get("/comments/:postId", commentController.getCommentsByPostId);
+router.get(
+  "/comments/:postId",
+  param("postId").isAlphanumeric(),
+  commentController.getCommentsByPostId
+);
 
 router.get("/comment/:commentId", commentController.getComment);
 
