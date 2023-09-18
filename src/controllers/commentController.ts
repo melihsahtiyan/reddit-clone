@@ -4,7 +4,6 @@ import { CustomError } from "../util/error/CustomError";
 import Comment from "../models/comment";
 import Post from "../models/post";
 import User from "../models/user";
-import comment from "../models/comment";
 
 export const createPostComment = async (
   req: Request,
@@ -325,7 +324,30 @@ export const getComment = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {};
+) => {
+  const commentId = req.params.commentId;
+
+  try {
+    const comment = await Comment.findById(commentId);
+
+    if (!comment) {
+      res.status(404).json({
+        message: "No comment found!",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Comment fetched successfully!",
+      comment: comment,
+    });
+  } catch (err) {
+    const error: CustomError = new Error(
+      "Fetching comment failed: " + err.message
+    );
+    error.statusCode = 500;
+    return next(error);
+  }
+};
 
 export const getCommentsByPostId = async (
   req: Request,
