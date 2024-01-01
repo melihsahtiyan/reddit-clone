@@ -2,6 +2,24 @@ import * as mongoose from "mongoose";
 
 const Schema = mongoose.Schema;
 
+interface PostDoc extends mongoose.Document {
+  title: string;
+  body: string;
+  sourceUrls: Array<String>;
+  creator: mongoose.Types.ObjectId;
+  vote?: {
+    votes: Array<mongoose.Types.ObjectId>;
+    totalVotes: number;
+  };
+  createdAt: Date;
+  isNsfw: boolean;
+  updatedAt?: Date;
+  // tags: mongoose.Types.ObjectId[];
+  comments: mongoose.Types.ObjectId[];
+}
+
+interface PostModel extends mongoose.Model<PostDoc> {}
+
 const postSchema = new Schema({
   title: {
     type: String,
@@ -20,19 +38,17 @@ const postSchema = new Schema({
     ref: "User",
     required: true,
   },
-  votes: [
-    {
-      point: {
-        type: Number,
-        default: 0,
-        Range: [-1, 1],
+  vote: {
+    votes: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Vote",
       },
-      voter: { type: Schema.Types.ObjectId, ref: "User" },
+    ],
+    totalVotes: {
+      type: Number,
+      default: 0,
     },
-  ],
-  totalVotes: {
-    type: Number,
-    default: 0,
   },
   createdAt: {
     type: Date,
@@ -47,4 +63,8 @@ const postSchema = new Schema({
   comments: [{ type: Schema.Types.ObjectId, ref: "Comment" }],
 });
 
-export default mongoose.model("Post", postSchema);
+const Post = mongoose.model("Post", postSchema);
+
+export default Post;
+
+export { PostDoc, PostModel };

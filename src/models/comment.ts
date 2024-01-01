@@ -1,6 +1,25 @@
 import * as mongoose from "mongoose";
+import { UserDoc } from "./user";
+import { PostDoc } from "./post";
+import { VoteDoc } from "./vote";
 
 const Schema = mongoose.Schema;
+
+interface CommentDoc extends mongoose.Document {
+  body: string;
+  creator: UserDoc;
+  post: PostDoc;
+  vote: {
+    votes: Array<VoteDoc>;
+    totalVotes: number;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+  replies: Array<CommentDoc>;
+  isReply: boolean;
+}
+
+interface CommentModel extends mongoose.Model<CommentDoc> {}
 
 const commentSchema = new Schema(
   {
@@ -19,8 +38,16 @@ const commentSchema = new Schema(
       required: true,
     },
     vote: {
-      type: Number,
-      default: 0,
+      votes: [
+        {
+          type: Schema.Types.ObjectId,
+          ref: "Vote",
+        },
+      ],
+      totalVotes: {
+        type: Number,
+        default: 0,
+      },
     },
     createdAt: {
       type: Date,
@@ -37,22 +64,12 @@ const commentSchema = new Schema(
       type: Boolean,
       required: true,
     },
-    votes: [
-      {
-        point: {
-          type: Number,
-          default: 0,
-          range: [-1, 1],
-        },
-        voter: { type: Schema.Types.ObjectId, ref: "User" },
-      },
-    ],
-    totalVotes: {
-      type: Number,
-      default: 0,
-    },
   },
   { timestamps: true }
 );
 
-export default mongoose.model("Comment", commentSchema);
+const Comment = mongoose.model("Comment", commentSchema);
+
+export default Comment;
+
+export { CommentDoc, CommentModel };

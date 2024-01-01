@@ -1,13 +1,19 @@
 import { Response, NextFunction } from "express";
 import { isValid } from "../util/error/validationErrorHandler";
 import { CustomError } from "../util/error/CustomError";
-import Post from "./../models/post";
+import Post, { PostDoc } from "./../models/post";
 import User from "./../models/user";
 import { clearImage } from "../util/fileUtil";
 import Request from "../types/Request";
 import user from "./../models/user";
+import { VoteDoc } from "../models/vote";
+import mongoose from "mongoose";
 
-export const createPost = async (req, res, next) => {
+export const createPost = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   isValid(req, next);
 
   const title = req.body.title;
@@ -30,13 +36,19 @@ export const createPost = async (req, res, next) => {
     }
   });
 
-  const post = await new Post({
+  const post: PostDoc = new Post({
     title: title,
     body: body,
     isNsfw: isNsfw,
-    creator: req.userId,
     sourceUrls: uploadedFiles,
-    updatedAt: Date.now(),
+    creator: userId,
+    comments: [],
+    vote: {
+      votes: new Array<mongoose.Types.ObjectId>(),
+      totalVotes: 0,
+    },
+    createdAt: new Date(Date.now()),
+    updatedAt: null,
   });
 
   try {
@@ -185,7 +197,7 @@ export const getPosts = async (
 
     const totalItems = await Post.countDocuments();
 
-    const posts = await Post.find()
+    const posts: Array<PostDoc> = await Post.find()
       .populate({ path: "creator", select: "firstName lastName" })
       .populate({
         path: "comments",
@@ -233,70 +245,6 @@ export const getPost = async (
     const error: CustomError = new Error(
       "Fetching post failed: " + err.message
     );
-    error.statusCode = 500;
-    return next(error);
-  }
-};
-
-export const votePost = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const postId = req.params.postId;
-  const userId = req.userId;
-
-  // "64f9a018953d4d1d90bcd14e";
-
-  const vote = req.body.vote;
-
-  try {
-    const postToVote = await Post.findById(postId);
-    const votedUser = await User.findById(userId);
-
-    checkIfPostAndUserConfirms(postToVote, votedUser, next);
-
-    if (vote < -1 || vote > 1) {
-      const error: CustomError = new Error("Vote must be between -1 and 1.");
-      error.statusCode = 422;
-      return next(error);
-    }
-
-    const userVoted = postToVote.votes.find(
-      (vote) => vote.voter.toString() === votedUser._id.toString()
-    );
-
-    if (userVoted) {
-      postToVote.totalVotes -= userVoted.point;
-      userVoted.point = vote;
-      postToVote.totalVotes += userVoted.point;
-    } else {
-      postToVote.votes.push({ point: vote, voter: votedUser._id });
-      postToVote.totalVotes += vote;
-    }
-
-    if (vote === 0) {
-      postToVote.votes.filter((vote) => {
-        console.log("====================================");
-        console.log("if (vote === 0)", vote.voter);
-        console.log("====================================");
-        vote.voter.toString() !== votedUser._id.toString();
-      });
-
-      return res.status(200).json({
-        message: "Post unvoted!",
-        post: { title: postToVote.title, votes: postToVote.votes },
-      });
-    }
-
-    const updatedPost = await postToVote.save();
-
-    return res.status(200).json({
-      message: "Post voted!",
-      post: { title: updatedPost.title, votes: updatedPost.votes },
-    });
-  } catch (err) {
-    const error: CustomError = new Error("Voting post failed: " + err.message);
     error.statusCode = 500;
     return next(error);
   }

@@ -33,13 +33,6 @@ router.get("/posts", postController.getPosts);
 router.get("/post/:postId", postController.getPost);
 
 router.post(
-  "/post/:postId/vote",
-  body("vote").isInt({ min: -1, max: 1 }),
-  isAuth,
-  postController.votePost
-);
-
-router.post(
   "/post/:postId/comment",
   [body("body").isLength({ min: 1, max: 150 })],
   isAuth,

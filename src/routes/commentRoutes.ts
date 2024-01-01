@@ -31,11 +31,4 @@ router.get("/comment/:commentId", commentController.getComment);
 
 router.delete("/comment/:commentId", isAuth, commentController.deleteComment);
 
-router.post(
-  "/comments/:commentId/vote",
-  isAuth,
-  body("vote").isInt({ min: -1, max: 1 }),
-  commentController.voteComment
-);
-
 export default router;
